@@ -1,0 +1,12 @@
+-- Reference SQLite schema. The authoritative schema is defined by backend/models/core.py
+-- and initialized with SQLAlchemy db.create_all(), keeping PostgreSQL migration practical.
+PRAGMA foreign_keys = ON;
+CREATE TABLE roles (id INTEGER PRIMARY KEY, name VARCHAR(40) NOT NULL UNIQUE);
+CREATE TABLE users (id INTEGER PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, role_id INTEGER NOT NULL REFERENCES roles(id), active BOOLEAN NOT NULL DEFAULT 1, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL);
+CREATE TABLE employees (id INTEGER PRIMARY KEY, employee_code VARCHAR(30) NOT NULL UNIQUE, user_id INTEGER UNIQUE REFERENCES users(id), manager_id INTEGER REFERENCES employees(id), name VARCHAR(120) NOT NULL, email VARCHAR(120), phone VARCHAR(15), designation VARCHAR(80), basic_salary NUMERIC(12,2), active BOOLEAN, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL);
+CREATE TABLE attendance (id INTEGER PRIMARY KEY, employee_id INTEGER NOT NULL REFERENCES employees(id), work_date DATE NOT NULL, check_in DATETIME, check_out DATETIME, check_in_lat FLOAT, check_in_lng FLOAT, check_in_accuracy FLOAT, check_out_lat FLOAT, check_out_lng FLOAT, check_out_accuracy FLOAT, status VARCHAR(30), created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, UNIQUE(employee_id,work_date));
+CREATE TABLE employee_locations (id INTEGER PRIMARY KEY, employee_id INTEGER NOT NULL REFERENCES employees(id), latitude FLOAT NOT NULL, longitude FLOAT NOT NULL, accuracy FLOAT, activity_type VARCHAR(50) NOT NULL, captured_at DATETIME);
+CREATE TABLE clients (id INTEGER PRIMARY KEY, client_code VARCHAR(30) NOT NULL UNIQUE, business_name VARCHAR(160) NOT NULL, contact_person VARCHAR(120) NOT NULL, mobile VARCHAR(10) NOT NULL, alternate_mobile VARCHAR(10), email VARCHAR(120), address TEXT NOT NULL, city VARCHAR(80), district VARCHAR(80), state VARCHAR(80), pin_code VARCHAR(6), latitude FLOAT, longitude FLOAT, business_type VARCHAR(80), gst_number VARCHAR(20), interested_product VARCHAR(120), expected_order_value NUMERIC(12,2), remarks TEXT, photo_path VARCHAR(255), created_by INTEGER NOT NULL REFERENCES users(id), created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL);
+-- Remaining tables created by the ORM: client_visits, tasks, task_updates,
+-- appointments, photos, activities, payroll, products, orders, order_items,
+-- expenses, notifications and audit_logs. See docs/DATABASE.md for relationships.

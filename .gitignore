@@ -1,0 +1,14 @@
+.env
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+backend/instance/*.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+mobile_app/.dart_tool/
+mobile_app/build/
+mobile_app/.flutter-plugins*
+backend/instance/security.json
+backend/instance/*-secrets.json

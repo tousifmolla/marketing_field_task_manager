@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Global Link · Field work | Task Manager</title>
+<style>body{font:16px system-ui;margin:0;background:#f3f5f8;color:#18263a}main{max-width:1100px;margin:auto;padding:24px}a{color:#225bc4}section{background:white;padding:22px;border-radius:12px;margin:20px 0}label{display:block;margin:12px 0}input,select,textarea,button{font:inherit;padding:10px;max-width:100%;box-sizing:border-box}input,textarea{width:100%}button{cursor:pointer;background:#225bc4;color:white;border:0;border-radius:6px;margin:5px}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:10px;border-bottom:1px solid #ddd}#message{color:#9c2727;white-space:pre-wrap}.scroll{overflow:auto}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:700px){.grid{display:block}}small{display:block;color:#53647a}</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='branding.css') }}"></head><body><main>{% include 'company_brand.html' %}<a href="/admin">← Dashboard</a><h1>Tasks, appointments & activity</h1>
+<p id="message" role="alert"></p><button id="refresh">Refresh</button>
+<div class="grid"><section><h2>Assign task</h2><form id="assign">
+<label>Executive <select id="assignee" required></select></label>
+<label>Title <input id="title" required maxlength="160"></label>
+<label>Instructions <textarea id="instructions" maxlength="2000"></textarea></label>
+<label>Priority <select id="priority"><option>Medium</option><option>High</option><option>Low</option></select></label>
+<label>Deadline (optional) <input type="date" id="deadline"></label>
+<button type="submit">Assign task</button></form></section>
+<section><h2>Executive activity</h2><label>Executive <select id="employee"></select></label>
+<div id="activity"></div></section></div>
+<section><h2>Assigned tasks</h2><div class="scroll"><table><thead><tr><th>Task</th><th>Executive</th><th>Status</th><th>History</th></tr></thead><tbody id="tasks"></tbody></table></div></section>
+<section><h2>Task history</h2><div id="history">Select a task to view its persisted history.</div></section>
+<section><h2>Appointments</h2><div id="appointments"></div></section>
+<script>
+const token = {{ field_token|tojson }};
+const el = id => document.getElementById(id);
+async function api(path, body) {
+  let response;
+  try { response = await fetch('/api' + path, {method: body ? 'POST' : 'GET', headers: {'Content-Type':'application/json', Authorization:'Bearer ' + token}, ...(body ? {body:JSON.stringify(body)} : {})}); }
+  catch { throw Error('Cannot reach the server. Check your connection and retry.'); }
+  if (response.status === 401) throw Error('Your session expired. Reload this page or sign in again.');
+  if (response.status === 403) throw Error('You do not have permission for this action.');
+  if (response.status >= 500) throw Error('The server is unavailable. Please retry.');
+  const result = await response.json();
+  if (!response.ok) throw Error(result.message || 'Please check your details and retry.');
+  return result.data;
+}
+function node(tag, text) { const value = document.createElement(tag); value.textContent = text; return value; }
+function time(value) { return value ? new Date(value).toLocaleString() : '—'; }
+function report(error) { el('message').textContent = error.message; }
+async function activity() {
+  el('activity').replaceChildren();
+  if (!el('employee').value) return;
+  const rows = await api('/activities/employees/' + el('employee').value);
+  if (!rows.length) el('activity').append(node('p', 'No activity yet.'));
+  for (const row of rows) { const p = node('p', row.description); p.append(node('small', row.type + ' • ' + time(row.occurred_at))); el('activity').append(p); }
+}
+async function refresh() {
+  el('message').textContent = '';
+  const tasks = await api('/tasks');
+  el('tasks').replaceChildren();
+  for (const row of tasks) {
+    const tr = document.createElement('tr');
+    for (const key of ['title','executive','status']) tr.append(node('td', row[key]));
+    const td = document.createElement('td'), button = node('button', 'View history');
+    button.onclick = async () => { try {
+      const task = await api('/tasks/' + row.id);
+      el('history').replaceChildren(node('h3', task.title));
+      for (const event of task.history) el('history').append(node('p', event.status + ' • ' + time(event.created_at) + ' • User ' + event.user_id + ' • ' + (event.remarks || '')));
+    } catch(error) { report(error); } };
+    td.append(button); tr.append(td); el('tasks').append(tr);
+  }
+  const appointments = await api('/appointments');
+  el('appointments').replaceChildren();
+  for (const row of appointments) el('appointments').append(node('p', row.client + ' • ' + time(row.appointment_at) + ' • ' + row.status + ' • ' + (row.notes || '')));
+  if (!appointments.length) el('appointments').append(node('p', 'No appointments yet.'));
+  await activity();
+}
+el('assign').onsubmit = async event => {
+  event.preventDefault();
+  const button = event.submitter; button.disabled = true; el('message').textContent = '';
+  try {
+    await api('/tasks', {title:el('title').value.trim(), assigned_employee_id:Number(el('assignee').value), instructions:el('instructions').value, priority:el('priority').value, deadline:el('deadline').value || null});
+    el('title').value = ''; el('instructions').value = '';
+    await refresh();
+    el('message').textContent = 'Task assigned successfully.';
+  } catch(error) { report(error); } finally { button.disabled = false; }
+};
+el('refresh').onclick = () => refresh().catch(report);
+el('employee').onchange = () => activity().catch(report);
+(async () => {
+  const people = await api('/tasks/executives');
+  for (const id of ['assignee','employee']) for (const person of people) {
+    const option = node('option', person.name); option.value = person.id; el(id).append(option);
+  }
+  await refresh();
+})().catch(report);
+</script></main></body></html>

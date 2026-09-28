@@ -1,0 +1,10 @@
+Analyzing marketing_field_task_manager...                       
+
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext - mobile_app\lib\screens\login_screen.dart:3:1961 - use_build_context_synchronously
+   info - Statements in an if should be enclosed in a block. Try wrapping the statement in a block - mobile_app\lib\services\api_service.dart:10:24 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block. Try wrapping the statement in a block - mobile_app\lib\services\api_service.dart:10:122 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block. Try wrapping the statement in a block - mobile_app\lib\services\api_service.dart:10:219 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block. Try wrapping the statement in a block - mobile_app\lib\services\api_service.dart:10:296 - curly_braces_in_flow_control_structures
+   info - 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings. Try replacing the use of the deprecated member with the replacement - mobile_app\lib\services\location_service.dart:4:502 - deprecated_member_use
+
+6 issues found. (ran in 39.9s)
